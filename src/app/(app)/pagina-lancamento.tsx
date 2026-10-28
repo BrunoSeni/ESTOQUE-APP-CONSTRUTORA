@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { banco } from "@/lib/db";
 import { formatarQuantidade } from "@/lib/estoque";
+import { formatarMoeda } from "@/lib/moeda";
 import { formatarDataHora, materiaisParaLancamento, podeLancar, sugestoes, ultimosLancamentos } from "@/lib/movimentos";
 import { exigirUsuario, obraAtual } from "@/lib/sessao";
 import { lancarAcao } from "./acoes";
@@ -65,6 +66,13 @@ export async function PaginaLancamento({ tipo }: { tipo: "entrada" | "saida" }) 
               ? [
                   { nome: "fornecedor", rotulo: "Fornecedor", obrigatorio: true, sugestoes: sugestoes(db, "fornecedor") },
                   { nome: "nota_fiscal", rotulo: "Número da nota fiscal", obrigatorio: true },
+                  {
+                    nome: "valor_unitario",
+                    rotulo: "Valor unitário (R$)",
+                    obrigatorio: true,
+                    tipo: "valor",
+                    ajuda: "Valor de 1 unidade, como está na nota fiscal.",
+                  },
                   { nome: "observacao", rotulo: "Observação" },
                 ]
               : [
@@ -103,6 +111,9 @@ export async function PaginaLancamento({ tipo }: { tipo: "entrada" | "saida" }) 
                     <td className={`${CLASSE_TD} font-medium`}>{l.material}</td>
                     <td className={`${CLASSE_TD} whitespace-nowrap text-right`}>
                       {formatarQuantidade(l.quantidade)} {l.unidade}
+                      {l.valor_unitario !== null && (
+                        <span className="block text-xs text-slate-500">{formatarMoeda(l.quantidade * l.valor_unitario)}</span>
+                      )}
                     </td>
                     <td className={`${CLASSE_TD} text-slate-600`}>
                       {l.detalhe}

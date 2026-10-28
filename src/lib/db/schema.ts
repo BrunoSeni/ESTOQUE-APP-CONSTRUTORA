@@ -54,6 +54,8 @@ create table if not exists movimentos (
   quantidade real not null check (quantidade <> 0 and (tipo = 'correcao' or quantidade > 0)),
   fornecedor text,
   nota_fiscal text,
+  -- Valor de 1 unidade na entrada (R$), para saber quanto vale o estoque.
+  valor_unitario real check (valor_unitario is null or valor_unitario >= 0),
   retirado_por text,
   etapa text,
   -- Liga as duas pontas de uma transferência entre obras.

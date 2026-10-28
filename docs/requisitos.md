@@ -43,6 +43,7 @@ Registrar o que chegou na obra:
 - material e quantidade;
 - fornecedor;
 - número da nota fiscal;
+- valor unitário (R$), para saber quanto vale o estoque;
 - data e quem registrou (preenchidos automaticamente).
 
 ### 5. Saída de material
@@ -57,7 +58,7 @@ Registrar o que foi usado:
 - Mandar material de uma obra para outra: o app tira de uma e põe na outra, com data e quem fez.
 
 ### 7. Saldo e histórico
-- Ver o **saldo atual de cada material por obra**.
+- Ver o **saldo atual de cada material por obra** e o **valor em estoque** (pelo custo médio das entradas).
 - Ver o **histórico de movimentações** (entradas, saídas e transferências), com filtro por obra, material e período.
 - Lançamentos não são apagados. Se houver erro, faz-se um **lançamento de correção**, para que o histórico fique sempre confiável.
 
@@ -65,7 +66,9 @@ Registrar o que foi usado:
 - **Saldo por obra.**
 - **Histórico de movimentações.**
 - **Consumo por período** (quanto de cada material saiu, por obra e por etapa/serviço).
+- Ao clicar em "Ver relatório", abre um **PDF** com o logo e as cores da CR Incorp.
 - Todos com opção de **exportar para Excel**.
+- **2ª etapa:** relatório de movimentação completa, mostrando como as entradas e saídas estão girando e quanto tempo cada material fica no estoque (ciclo).
 
 ### 9. Celular e computador
 - A mesma ferramenta funciona bem na tela do celular (botões grandes e lançamento rápido) e no computador.
@@ -78,7 +81,7 @@ Registrar o que foi usado:
 - **Funcionar sem internet** no canteiro (guardar os lançamentos e enviar quando voltar o sinal).
 - **Foto da nota fiscal ou do material** no lançamento.
 - **Integração com o Sienge** (por exemplo, trazer as notas fiscais ou os insumos automaticamente).
-- **Controle de custo** (valor do material em estoque e gasto por obra).
+- **Controle de custo completo** (orçamento e gasto por obra). O valor do estoque já entra na 1ª versão.
 
 ## Cuidados
 

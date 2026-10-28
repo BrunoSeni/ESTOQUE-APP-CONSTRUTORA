@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DatabaseSync } from "node:sqlite";
 import { criarUsuario, entrar, existeUsuario, sair, usuarioDaSessao } from "../auth";
+import { DatabaseSync as Banco } from "node:sqlite";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { abrirBanco } from ".";
 
 let db: DatabaseSync;
@@ -67,5 +71,24 @@ describe("movimentos", () => {
     lancar("entrada", 10);
     expect(() => db.prepare("update movimentos set quantidade = 99").run()).toThrow(/correção/);
     expect(() => db.prepare("delete from movimentos").run()).toThrow(/correção/);
+  });
+});
+
+describe("banco antigo", () => {
+  it("ganha a coluna de valor sem perder os lançamentos", () => {
+    const arquivo = path.join(mkdtempSync(path.join(tmpdir(), "estoque-")), "antigo.db");
+    const antigo = new Banco(arquivo);
+    antigo.exec(`create table movimentos (id integer primary key, obra_id integer, material_id integer, tipo text,
+      quantidade real, fornecedor text, nota_fiscal text, retirado_por text, etapa text, transferencia_id text,
+      observacao text, registrado_por integer, registrado_em text default (datetime('now')))`);
+    antigo.prepare("insert into movimentos (obra_id, material_id, tipo, quantidade, registrado_por) values (1, 1, 'entrada', 3, 1)").run();
+    antigo.close();
+
+    const novo = abrirBanco(arquivo);
+    const linha = novo.prepare("select quantidade, valor_unitario from movimentos").get() as { quantidade: number; valor_unitario: null };
+    expect(linha).toEqual({ quantidade: 3, valor_unitario: null });
+    novo.close();
+    // Abrir de novo não tenta criar a coluna outra vez.
+    abrirBanco(arquivo).close();
   });
 });

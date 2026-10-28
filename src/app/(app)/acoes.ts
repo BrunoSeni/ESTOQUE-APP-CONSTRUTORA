@@ -164,7 +164,12 @@ export async function lancarAcao(
   };
   const r =
     tipo === "entrada"
-      ? registrarEntrada(banco(), { ...comum, fornecedor: texto(form, "fornecedor"), notaFiscal: texto(form, "nota_fiscal") })
+      ? registrarEntrada(banco(), {
+          ...comum,
+          fornecedor: texto(form, "fornecedor"),
+          notaFiscal: texto(form, "nota_fiscal"),
+          valorUnitario: texto(form, "valor_unitario"),
+        })
       : registrarSaida(banco(), { ...comum, retiradoPor: texto(form, "retirado_por"), etapa: texto(form, "etapa") });
   if ("erro" in r) return { ...anterior, erro: r.erro, mensagem: undefined, valores: valores(form) };
   revalidatePath(`/${tipo}`);

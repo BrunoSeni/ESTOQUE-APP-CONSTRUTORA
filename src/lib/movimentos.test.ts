@@ -6,6 +6,8 @@ import { abrirBanco } from "./db";
 import {
   consumoPorPeriodo,
   lerQuantidade,
+  lerValor,
+  somarValor,
   listarSaldos,
   materiaisParaLancamento,
   podeLancar,
@@ -35,8 +37,8 @@ function hoje(dias = 0): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-const entrada = (obraId: number, materialId: number, quantidade: string) =>
-  registrarEntrada(db, { obraId, materialId, quantidade, fornecedor: "Depósito Exemplo", notaFiscal: "123", usuarioId });
+const entrada = (obraId: number, materialId: number, quantidade: string, valorUnitario = "10") =>
+  registrarEntrada(db, { obraId, materialId, quantidade, fornecedor: "Depósito Exemplo", notaFiscal: "123", valorUnitario, usuarioId });
 const saida = (obraId: number, materialId: number, quantidade: string, etapa = "Alvenaria") =>
   registrarSaida(db, { obraId, materialId, quantidade, retiradoPor: "João", etapa, usuarioId });
 
@@ -63,6 +65,18 @@ describe("quantidade digitada", () => {
   });
 });
 
+describe("valor digitado", () => {
+  it("entende reais no jeito brasileiro e aceita zero", () => {
+    expect(lerValor("32,90")).toBe(32.9);
+    expect(lerValor("R$ 1.234,56")).toBe(1234.56);
+    expect(lerValor("1234.5")).toBe(1234.5);
+    expect(lerValor("0")).toBe(0);
+    expect(lerValor("0,00")).toBe(0);
+    expect(lerValor("")).toBeNull();
+    expect(lerValor("abc")).toBeNull();
+  });
+});
+
 describe("perfis", () => {
   it("só almoxarife e administrador lançam; só escritório e administrador veem relatórios", () => {
     expect(["almoxarife", "engenheiro", "escritorio", "admin"].filter((p) => podeLancar(p as never))).toEqual([
@@ -78,18 +92,22 @@ describe("perfis", () => {
 
 describe("entrada e saída", () => {
   it("entrada soma no saldo e pede fornecedor e nota fiscal", () => {
-    expect(entrada(obraA, cimento, "50")).toEqual({ mensagem: "Entrada registrada: 50 saco de Cimento CP II." });
+    expect(entrada(obraA, cimento, "50", "32,90")).toEqual({
+      mensagem: "Entrada registrada: 50 saco de Cimento CP II, total de R$\u00a01.645,00.",
+    });
     expect(saldoDoMaterial(db, obraA, cimento)).toBe(50);
     expect(saldoDoMaterial(db, obraB, cimento)).toBe(0);
 
-    expect(registrarEntrada(db, { obraId: obraA, materialId: cimento, quantidade: "1", fornecedor: " ", notaFiscal: "1", usuarioId })).toEqual({
+    expect(registrarEntrada(db, { obraId: obraA, materialId: cimento, quantidade: "1", fornecedor: " ", notaFiscal: "1", valorUnitario: "1", usuarioId })).toEqual({
       erro: "Informe o fornecedor.",
     });
-    expect(registrarEntrada(db, { obraId: obraA, materialId: cimento, quantidade: "1", fornecedor: "X", notaFiscal: "", usuarioId })).toEqual({
+    expect(registrarEntrada(db, { obraId: obraA, materialId: cimento, quantidade: "1", fornecedor: "X", notaFiscal: "", valorUnitario: "1", usuarioId })).toEqual({
       erro: "Informe o número da nota fiscal.",
     });
     expect(entrada(obraA, cimento, "0")).toHaveProperty("erro");
     expect(entrada(obraA, 999, "1")).toEqual({ erro: "Escolha o material." });
+    expect(entrada(obraA, cimento, "1", "")).toEqual({ erro: "Informe o valor unitário em reais (ex.: 32,90)." });
+    expect(entrada(obraA, cimento, "1", "-5")).toHaveProperty("erro");
   });
 
   it("saída tira do saldo e não deixa sair mais do que tem", () => {
@@ -155,6 +173,30 @@ describe("saldo e relatórios", () => {
     expect(consumoPorPeriodo(db, { obraIds: [obraA, obraB], de: hoje(-30), ate: hoje() })).toHaveLength(3);
     expect(consumoPorPeriodo(db, { obraIds: [obraA], de: hoje(1), ate: hoje(5) })).toEqual([]);
     expect(consumoPorPeriodo(db, { obraIds: [obraA], de: "", ate: hoje() })).toEqual([]);
+  });
+});
+
+describe("valor do estoque", () => {
+  it("usa o custo médio das entradas e soma o valor da obra", () => {
+    entrada(obraA, cimento, "10", "30");
+    entrada(obraA, cimento, "30", "34");
+    saida(obraA, cimento, "20");
+    entrada(obraA, areia, "2", "100");
+    // Entrada antiga, de antes do campo de valor: fica de fora do custo médio.
+    db.prepare(
+      "insert into movimentos (obra_id, material_id, tipo, quantidade, fornecedor, nota_fiscal, registrado_por) values (?, ?, 'entrada', 5, 'X', '1', ?)",
+    ).run(obraB, cimento, usuarioId);
+
+    const saldos = listarSaldos(db, [obraA, obraB]);
+    expect(saldos.map((l) => [l.obra, l.material, l.saldo, l.custo_medio, l.valor])).toEqual([
+      ["Obra A", "Areia média", 2, 100, 200],
+      ["Obra A", "Cimento CP II", 20, 33, 660],
+      ["Obra B", "Cimento CP II", 5, null, null],
+    ]);
+    expect(somarValor(saldos)).toBe(860);
+
+    const consumo = consumoPorPeriodo(db, { obraIds: [obraA], de: hoje(), ate: hoje() });
+    expect(consumo.map((l) => [l.material, l.quantidade, l.valor])).toEqual([["Cimento CP II", 20, 660]]);
   });
 });
 

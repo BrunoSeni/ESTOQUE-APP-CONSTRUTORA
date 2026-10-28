@@ -17,12 +17,18 @@ export async function GET(req: Request) {
     ate: p.get("ate") ?? undefined,
   });
   const arquivo = gerarXlsx([
-    { nome: r.tipo === "saldo" ? "Saldo" : "Consumo", colunas: r.colunas, linhas: r.linhas, larguras: r.larguras },
+    {
+      nome: r.titulo,
+      colunas: r.colunas.map((c) => c.titulo),
+      larguras: r.colunas.map((c) => c.largura),
+      moedas: r.colunas.flatMap((c, i) => (c.tipo === "moeda" ? [i] : [])),
+      linhas: r.linhas,
+    },
   ]);
   return new Response(new Uint8Array(arquivo), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${r.arquivo}"`,
+      "Content-Disposition": `attachment; filename="${r.arquivo}.xlsx"`,
       "Cache-Control": "no-store",
     },
   });
