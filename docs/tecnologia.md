@@ -28,6 +28,12 @@ Para abrir:
 3. Na primeira vez, o app pede para criar o **usuário administrador** (nome, e-mail e senha).
 4. Para fechar o app, feche a janela preta que ficou aberta.
 
+**Depois de entrar** (como administrador), a tela inicial mostra os primeiros passos:
+
+1. **Obras**: cadastre as obras em andamento.
+2. **Materiais > Importar planilha**: escolha a planilha de insumos (Excel `.xlsx` ou `.csv`). O app confere antes e mostra quantos materiais são novos, quantos já existem e quais linhas têm problema. Só depois de clicar em "Importar" eles são gravados. A planilha **não é guardada** nem enviada ao GitHub: só os nomes e unidades vão para o banco do app, na pasta `dados`.
+3. **Usuários**: cadastre as pessoas, escolha o perfil e as obras de cada uma.
+
 **Para testar no celular:** com o celular no **mesmo Wi-Fi** do computador, abra no navegador do celular `http://IP-DO-COMPUTADOR:3000`. Para achar o IP no Windows, abra o "Prompt de Comando", digite `ipconfig` e use o número em "Endereço IPv4" (algo como `192.168.0.15`). Se o Windows perguntar sobre o firewall, clique em **Permitir**.
 
 **Para atualizar** depois que um PR entrar na `main`: baixe o ZIP de novo e copie a pasta `dados` da versão antiga para a nova (é nela que ficam os cadastros e lançamentos).
@@ -43,6 +49,9 @@ Para abrir:
 - `src/lib/db/` — o banco: tabelas, saldo por obra e as travas que impedem saldo negativo e alteração ou exclusão de lançamentos.
 - `src/lib/auth.ts` — login, senhas e sessões.
 - `src/lib/estoque.ts` — regras do estoque usadas nas telas.
+- `src/lib/cadastros.ts` — obras, materiais (com a importação) e usuários.
+- `src/lib/planilha.ts` — leitura da planilha de insumos (.xlsx e .csv), sem biblioteca de fora. `src/lib/exemplos/` tem uma planilha de exemplo com dados inventados, usada nos testes.
+- `src/app/(app)/` — telas de quem já entrou: menu lateral com a obra atual, início, obras, materiais e usuários.
 - Testes ficam ao lado do código (`*.test.ts`) e rodam com `npm test`.
 - `.github/workflows/ci.yml` — a verificação automática de todo PR: confere o código, roda os testes e monta o app.
 
