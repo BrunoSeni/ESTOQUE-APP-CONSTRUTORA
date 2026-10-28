@@ -8,13 +8,16 @@ import { CLASSE_BOTAO, CLASSE_BOTAO_CLARO, CLASSE_CAMPO } from "./ui";
 export type CampoCadastro = {
   nome: string;
   rotulo: string;
-  tipo: "text" | "email" | "password" | "escolha" | "marcar";
+  tipo: "text" | "email" | "password" | "escolha" | "marcar" | "imagem";
   obrigatorio?: boolean;
   ajuda?: string;
   autoComplete?: string;
   sugestoes?: string[];
   // Para "escolha" (só uma) e "marcar" (várias).
   opcoes?: { valor: string; rotulo: string; ajuda?: string }[];
+  // Para "imagem": endereço da imagem que já está cadastrada.
+  atual?: string | null;
+  limiteMB?: number;
 };
 
 // Formulário de cadastro montado a partir da lista de campos.
@@ -39,6 +42,41 @@ export function FormularioCadastro({
     <form action={enviar} className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       {campos.map((c) => {
         const v = valor(c.nome);
+        if (c.tipo === "imagem") {
+          return (
+            <div key={c.nome}>
+              <span className="text-sm font-medium">{c.rotulo}</span>
+              {c.atual && (
+                <div className="mt-2 flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.atual} alt={c.rotulo} className="h-24 w-24 rounded-lg border border-slate-200 object-cover" />
+                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                    <input type="checkbox" name={`remover_${c.nome}`} className="accent-marca-600" /> Remover
+                  </label>
+                </div>
+              )}
+              <input
+                name={c.nome}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => {
+                  // Avisa antes de enviar quando a foto é grande demais (ex.: arquivo original da agência).
+                  const arquivo = e.target.files?.[0];
+                  e.target.setCustomValidity(
+                    arquivo && c.limiteMB && arquivo.size > c.limiteMB * 1024 * 1024
+                      ? `A imagem é maior que ${c.limiteMB} MB. Diminua o tamanho da foto e tente de novo.`
+                      : "",
+                  );
+                }}
+                className="mt-2 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-marca-50 file:px-4 file:py-2 file:font-medium file:text-marca-700 hover:file:bg-marca-100"
+              />
+              <span className="mt-1 block text-sm text-slate-500">
+                {c.atual ? "Para trocar, escolha outra imagem. " : ""}
+                {c.ajuda}
+              </span>
+            </div>
+          );
+        }
         if (c.tipo === "escolha" || c.tipo === "marcar") {
           const marcados = Array.isArray(v) ? v : v ? [v] : [];
           return (
