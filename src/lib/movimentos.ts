@@ -2,6 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import type { Perfil } from "./auth";
 import { limparTexto } from "./cadastros";
 import { formatarQuantidade, validarRetirada } from "./estoque";
+import { formatarMoeda } from "./moeda";
 
 // Entradas, saídas, saldo e relatórios. Funções puras sobre o banco, para poder testar.
 
@@ -30,6 +31,14 @@ export function lerQuantidade(texto: string): number | null {
   return n > 0 ? n : null;
 }
 
+// Valor em reais: "32,90", "R$ 1.234,56", "1234.5". Aceita zero (material bonificado).
+export function lerValor(texto: string): number | null {
+  const t = texto.replace(/r\$/i, "").trim();
+  if (/^0+([,.]0*)?$/.test(t.replace(/\s/g, ""))) return 0;
+  const n = lerQuantidade(t);
+  return n === null ? null : Math.round(n * 100) / 100;
+}
+
 // ---------- Lançamentos ----------
 
 type MaterialAtivo = { id: number; nome: string; unidade: string };
@@ -54,6 +63,7 @@ export function registrarEntrada(
     quantidade: string;
     fornecedor: string;
     notaFiscal: string;
+    valorUnitario: string;
     observacao?: string;
     usuarioId: number;
   },
@@ -67,12 +77,26 @@ export function registrarEntrada(
   const notaFiscal = limparTexto(dados.notaFiscal);
   if (!fornecedor) return { erro: "Informe o fornecedor." };
   if (!notaFiscal) return { erro: "Informe o número da nota fiscal." };
+  const valor = lerValor(dados.valorUnitario);
+  if (valor === null) return { erro: "Informe o valor unitário em reais (ex.: 32,90)." };
 
   db.prepare(
-    `insert into movimentos (obra_id, material_id, tipo, quantidade, fornecedor, nota_fiscal, observacao, registrado_por)
-     values (?, ?, 'entrada', ?, ?, ?, ?, ?)`,
-  ).run(dados.obraId, material.id, quantidade, fornecedor, notaFiscal, limparTexto(dados.observacao ?? "") || null, dados.usuarioId);
-  return { mensagem: `Entrada registrada: ${formatarQuantidade(quantidade)} ${material.unidade} de ${material.nome}.` };
+    `insert into movimentos
+       (obra_id, material_id, tipo, quantidade, fornecedor, nota_fiscal, valor_unitario, observacao, registrado_por)
+     values (?, ?, 'entrada', ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    dados.obraId,
+    material.id,
+    quantidade,
+    fornecedor,
+    notaFiscal,
+    valor,
+    limparTexto(dados.observacao ?? "") || null,
+    dados.usuarioId,
+  );
+  return {
+    mensagem: `Entrada registrada: ${formatarQuantidade(quantidade)} ${material.unidade} de ${material.nome}, total de ${formatarMoeda(quantidade * valor)}.`,
+  };
 }
 
 export function registrarSaida(
@@ -149,26 +173,60 @@ export function saldoDoMaterial(db: DatabaseSync, obraId: number, materialId: nu
   return linha?.saldo ?? 0;
 }
 
-export type LinhaSaldo = { obra_id: number; obra: string; material_id: number; material: string; unidade: string; saldo: number };
+// Custo médio de cada material por obra: média do valor unitário das entradas, pesada pela quantidade.
+// Entradas antigas, sem valor, ficam de fora da conta.
+const CUSTO_MEDIO = `
+  select obra_id, material_id, sum(quantidade * valor_unitario) / sum(quantidade) as custo_medio
+  from movimentos
+  where tipo = 'entrada' and valor_unitario is not null
+  group by obra_id, material_id`;
+
+export type LinhaSaldo = {
+  obra_id: number;
+  obra: string;
+  material_id: number;
+  material: string;
+  unidade: string;
+  saldo: number;
+  // null quando nenhuma entrada desse material teve valor informado.
+  custo_medio: number | null;
+  valor: number | null;
+};
 
 // Saldo de cada material nas obras pedidas. Só mostra o que tem saldo (diferente de zero).
 export function listarSaldos(db: DatabaseSync, obraIds: number[]): LinhaSaldo[] {
   if (obraIds.length === 0) return [];
   return db
     .prepare(
-      `select s.obra_id, o.nome as obra, s.material_id, m.nome as material, m.unidade, s.saldo
+      `select s.obra_id, o.nome as obra, s.material_id, m.nome as material, m.unidade, s.saldo,
+         round(c.custo_medio, 4) as custo_medio, round(s.saldo * c.custo_medio, 2) as valor
        from saldos s
        join obras o on o.id = s.obra_id
        join materiais m on m.id = s.material_id
+       left join (${CUSTO_MEDIO}) c on c.obra_id = s.obra_id and c.material_id = s.material_id
        where s.obra_id in (${obraIds.map(() => "?").join(",")}) and abs(s.saldo) > 0.0005
        order by o.nome collate nocase, m.nome collate nocase`,
     )
     .all(...obraIds) as LinhaSaldo[];
 }
 
+// Soma do valor das linhas (as que não têm valor contam como zero).
+export function somarValor(linhas: { valor: number | null }[]): number {
+  return Math.round(linhas.reduce((t, l) => t + (l.valor ?? 0), 0) * 100) / 100;
+}
+
 // ---------- Consumo por período ----------
 
-export type LinhaConsumo = { obra: string; etapa: string; material: string; unidade: string; quantidade: number; saidas: number };
+export type LinhaConsumo = {
+  obra: string;
+  etapa: string;
+  material: string;
+  unidade: string;
+  quantidade: number;
+  saidas: number;
+  // Quantidade vezes o custo médio do material na obra; null quando não há valor nas entradas.
+  valor: number | null;
+};
 
 // Data do formulário (AAAA-MM-DD, no horário daqui) mais "dias", no formato guardado no banco (UTC).
 export function dataParaBanco(data: string, dias = 0): string | null {
@@ -191,10 +249,12 @@ export function consumoPorPeriodo(
   return db
     .prepare(
       `select o.nome as obra, coalesce(mv.etapa, '') as etapa, m.nome as material, m.unidade,
-         round(sum(mv.quantidade), 3) as quantidade, count(*) as saidas
+         round(sum(mv.quantidade), 3) as quantidade, count(*) as saidas,
+         round(sum(mv.quantidade) * max(c.custo_medio), 2) as valor
        from movimentos mv
        join obras o on o.id = mv.obra_id
        join materiais m on m.id = mv.material_id
+       left join (${CUSTO_MEDIO}) c on c.obra_id = mv.obra_id and c.material_id = mv.material_id
        where mv.tipo = 'saida' and mv.registrado_em >= ? and mv.registrado_em < ?
          and mv.obra_id in (${filtro.obraIds.map(() => "?").join(",")})
        group by mv.obra_id, coalesce(mv.etapa, ''), mv.material_id
@@ -211,6 +271,7 @@ export type Lancamento = {
   material: string;
   unidade: string;
   quantidade: number;
+  valor_unitario: number | null;
   detalhe: string;
   quem: string;
   registrado_em: string;
@@ -219,7 +280,7 @@ export type Lancamento = {
 export function ultimosLancamentos(db: DatabaseSync, obraId: number, tipo: "entrada" | "saida", limite = 5): Lancamento[] {
   return db
     .prepare(
-      `select mv.id, mv.tipo, m.nome as material, m.unidade, mv.quantidade,
+      `select mv.id, mv.tipo, m.nome as material, m.unidade, mv.quantidade, mv.valor_unitario,
          case when mv.tipo = 'entrada' then mv.fornecedor || ' · NF ' || mv.nota_fiscal
               else mv.retirado_por || ' · ' || mv.etapa end as detalhe,
          u.nome as quem, mv.registrado_em

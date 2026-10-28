@@ -1,10 +1,11 @@
 import { limparTexto, semAcento } from "@/lib/cadastros";
 import { banco } from "@/lib/db";
 import { formatarQuantidade } from "@/lib/estoque";
-import { listarSaldos, podeLancar } from "@/lib/movimentos";
+import { formatarMoeda } from "@/lib/moeda";
+import { listarSaldos, podeLancar, somarValor } from "@/lib/movimentos";
 import { exigirUsuario, obraAtual } from "@/lib/sessao";
 import { Icone } from "../icones";
-import { BotaoLink, Cabecalho, Cartao, CLASSE_BOTAO, CLASSE_TABELA, CLASSE_TD, CLASSE_TH, Vazio } from "../ui";
+import { BotaoLink, Cabecalho, Cartao, CartaoNumero, CLASSE_BOTAO, CLASSE_TABELA, CLASSE_TD, CLASSE_TH, Vazio } from "../ui";
 
 // Quanto tem de cada material na obra atual. Todos os perfis podem consultar.
 export default async function Saldo({ searchParams }: { searchParams: Promise<{ busca?: string }> }) {
@@ -44,6 +45,23 @@ export default async function Saldo({ searchParams }: { searchParams: Promise<{ 
       </Cabecalho>
 
       {todos.length > 0 && (
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          <CartaoNumero
+            icone="estoque"
+            rotulo="Valor em estoque"
+            valor={formatarMoeda(somarValor(todos))}
+            texto="pelo custo médio das entradas"
+          />
+          <CartaoNumero
+            icone="material"
+            rotulo="Materiais com saldo"
+            valor={todos.length.toLocaleString("pt-BR")}
+            texto="nesta obra"
+          />
+        </div>
+      )}
+
+      {todos.length > 0 && (
         <form className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Icone nome="busca" className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -72,6 +90,7 @@ export default async function Saldo({ searchParams }: { searchParams: Promise<{ 
                 <th className={CLASSE_TH}>Material</th>
                 <th className={`${CLASSE_TH} text-right`}>Saldo</th>
                 <th className={CLASSE_TH}>Unidade</th>
+                <th className={`${CLASSE_TH} text-right`}>Valor</th>
               </tr>
             </thead>
             <tbody>
@@ -80,15 +99,27 @@ export default async function Saldo({ searchParams }: { searchParams: Promise<{ 
                   <td className={`${CLASSE_TD} font-medium`}>{s.material}</td>
                   <td className={`${CLASSE_TD} text-right text-base font-semibold tabular-nums`}>{formatarQuantidade(s.saldo)}</td>
                   <td className={`${CLASSE_TD} text-slate-600`}>{s.unidade}</td>
+                  <td className={`${CLASSE_TD} whitespace-nowrap text-right tabular-nums`}>
+                    {s.valor === null ? (
+                      <span className="text-slate-400">sem valor</span>
+                    ) : (
+                      <>
+                        {formatarMoeda(s.valor)}
+                        <span className="block text-xs text-slate-500">
+                          {formatarMoeda(s.custo_medio ?? 0)} / {s.unidade}
+                        </span>
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </Cartao>
-      {saldos.length > 0 && (
+      {todos.some((s) => s.valor === null) && (
         <p className="mt-3 text-sm text-slate-500">
-          {saldos.length.toLocaleString("pt-BR")} {saldos.length === 1 ? "material" : "materiais"} com saldo nesta obra.
+          “Sem valor”: material que entrou antes do campo de valor existir. Ele passa a ter valor na próxima entrada.
         </p>
       )}
     </>

@@ -1,11 +1,20 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { Obra } from "@/lib/cadastros";
 import type { Celula } from "@/lib/excel";
-import { consumoPorPeriodo, listarSaldos } from "@/lib/movimentos";
+import { formatarQuantidade } from "@/lib/estoque";
+import { formatarMoeda } from "@/lib/moeda";
+import { consumoPorPeriodo, listarSaldos, somarValor } from "@/lib/movimentos";
 
-// Monta o relatório pedido. A tela e a planilha do Excel usam exatamente as mesmas linhas.
+// Monta o relatório pedido. O PDF e a planilha do Excel usam exatamente as mesmas linhas.
 
 export type FiltroRelatorio = { tipo?: string; obra?: string; de?: string; ate?: string };
+
+export type Coluna = {
+  titulo: string;
+  tipo: "texto" | "quantidade" | "moeda";
+  // Largura no Excel (em letras) e no PDF (proporção da largura da página).
+  largura: number;
+};
 
 export type Relatorio = {
   tipo: "saldo" | "consumo";
@@ -13,11 +22,11 @@ export type Relatorio = {
   de: string;
   ate: string;
   titulo: string;
-  colunas: string[];
-  // Colunas com número (alinhadas à direita na tela).
-  numericas: number[];
-  larguras: number[];
+  subtitulo: string;
+  colunas: Coluna[];
   linhas: Celula[][];
+  // Números em destaque no topo do PDF, como o valor total em estoque.
+  resumo: { rotulo: string; valor: string }[];
   arquivo: string;
 };
 
@@ -32,20 +41,33 @@ export function montarRelatorio(db: DatabaseSync, obras: Obra[], filtro: FiltroR
   const escolhida = obras.find((o) => String(o.id) === filtro.obra);
   const obraIds = escolhida ? [escolhida.id] : obras.map((o) => o.id);
   const nomeObras = escolhida ? escolhida.nome : "Todas as obras";
+  const obra = escolhida ? String(escolhida.id) : "todas";
   const hoje = new Date();
 
   if (tipo === "saldo") {
+    const saldos = listarSaldos(db, obraIds);
     return {
       tipo,
-      obra: escolhida ? String(escolhida.id) : "todas",
+      obra,
       de: "",
       ate: "",
-      titulo: `Saldo por obra · ${nomeObras} · ${hoje.toLocaleDateString("pt-BR")}`,
-      colunas: ["Obra", "Material", "Unidade", "Saldo"],
-      numericas: [3],
-      larguras: [28, 50, 10, 12],
-      linhas: listarSaldos(db, obraIds).map((s) => [s.obra, s.material, s.unidade, s.saldo]),
-      arquivo: `saldo-${dataLocal(hoje)}.xlsx`,
+      titulo: "Saldo por obra",
+      subtitulo: `${nomeObras} · posição em ${hoje.toLocaleDateString("pt-BR")}`,
+      colunas: [
+        { titulo: "Obra", tipo: "texto", largura: 26 },
+        { titulo: "Material", tipo: "texto", largura: 46 },
+        { titulo: "Unidade", tipo: "texto", largura: 9 },
+        { titulo: "Saldo", tipo: "quantidade", largura: 12 },
+        { titulo: "Custo médio", tipo: "moeda", largura: 14 },
+        { titulo: "Valor em estoque", tipo: "moeda", largura: 16 },
+      ],
+      linhas: saldos.map((s) => [s.obra, s.material, s.unidade, s.saldo, s.custo_medio, s.valor]),
+      resumo: [
+        { rotulo: "Valor total em estoque", valor: formatarMoeda(somarValor(saldos)) },
+        { rotulo: "Materiais com saldo", valor: saldos.length.toLocaleString("pt-BR") },
+        { rotulo: "Obras", valor: new Set(saldos.map((s) => s.obra_id)).size.toLocaleString("pt-BR") },
+      ],
+      arquivo: `saldo-${dataLocal(hoje)}`,
     };
   }
 
@@ -53,23 +75,36 @@ export function montarRelatorio(db: DatabaseSync, obras: Obra[], filtro: FiltroR
   const de = filtro.de && DATA.test(filtro.de) ? filtro.de : dataLocal(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const ate = filtro.ate && DATA.test(filtro.ate) ? filtro.ate : dataLocal(hoje);
   const br = (d: string) => d.split("-").reverse().join("/");
+  const consumo = consumoPorPeriodo(db, { obraIds, de, ate });
   return {
     tipo,
-    obra: escolhida ? String(escolhida.id) : "todas",
+    obra,
     de,
     ate,
-    titulo: `Consumo de ${br(de)} a ${br(ate)} · ${nomeObras}`,
-    colunas: ["Obra", "Etapa / serviço", "Material", "Unidade", "Quantidade", "Nº de saídas"],
-    numericas: [4, 5],
-    larguras: [28, 24, 50, 10, 12, 12],
-    linhas: consumoPorPeriodo(db, { obraIds, de, ate }).map((c) => [
-      c.obra,
-      c.etapa,
-      c.material,
-      c.unidade,
-      c.quantidade,
-      c.saidas,
-    ]),
-    arquivo: `consumo-${de}-a-${ate}.xlsx`,
+    titulo: "Consumo por período",
+    subtitulo: `${nomeObras} · de ${br(de)} a ${br(ate)}`,
+    colunas: [
+      { titulo: "Obra", tipo: "texto", largura: 24 },
+      { titulo: "Etapa / serviço", tipo: "texto", largura: 22 },
+      { titulo: "Material", tipo: "texto", largura: 42 },
+      { titulo: "Unidade", tipo: "texto", largura: 9 },
+      { titulo: "Quantidade", tipo: "quantidade", largura: 12 },
+      { titulo: "Saídas", tipo: "quantidade", largura: 9 },
+      { titulo: "Valor", tipo: "moeda", largura: 15 },
+    ],
+    linhas: consumo.map((c) => [c.obra, c.etapa, c.material, c.unidade, c.quantidade, c.saidas, c.valor]),
+    resumo: [
+      { rotulo: "Valor consumido", valor: formatarMoeda(somarValor(consumo)) },
+      { rotulo: "Saídas registradas", valor: consumo.reduce((t, c) => t + c.saidas, 0).toLocaleString("pt-BR") },
+      { rotulo: "Materiais diferentes", valor: new Set(consumo.map((c) => c.material)).size.toLocaleString("pt-BR") },
+    ],
+    arquivo: `consumo-${de}-a-${ate}`,
   };
+}
+
+// Texto de uma célula como aparece no PDF.
+export function textoCelula(valor: Celula, coluna: Coluna): string {
+  if (valor === null || valor === "") return "—";
+  if (typeof valor === "number") return coluna.tipo === "moeda" ? formatarMoeda(valor) : formatarQuantidade(valor);
+  return valor;
 }

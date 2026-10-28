@@ -7,7 +7,15 @@ import { CLASSE_BOTAO, CLASSE_CAMPO } from "./ui";
 
 type Material = { id: number; nome: string; unidade: string; saldo: number };
 
-export type CampoTexto = { nome: string; rotulo: string; sugestoes?: string[]; ajuda?: string; obrigatorio?: boolean };
+export type CampoTexto = {
+  nome: string;
+  rotulo: string;
+  sugestoes?: string[];
+  ajuda?: string;
+  obrigatorio?: boolean;
+  // "valor": campo em reais; mostra o total (quantidade x valor) logo abaixo.
+  tipo?: "valor";
+};
 
 const LIMITE_RESULTADOS = 30;
 
@@ -17,6 +25,15 @@ function semAcento(texto: string): string {
 
 function formatar(valor: number): string {
   return valor.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+}
+
+// Lê "1.250,5" ou "2.5" só para mostrar o total enquanto a pessoa digita (o servidor confere de novo).
+function numero(texto: string): number {
+  let t = texto.replace(/r\$/i, "").replace(/\s/g, "");
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  const n = Number(t);
+  return Number.isFinite(n) ? n : NaN;
 }
 
 // Formulário de entrada ou saída: escolher o material, a quantidade e os outros campos.
@@ -37,6 +54,10 @@ export function FormularioLancamento({
   mostrarSaldo?: boolean;
 }) {
   const [estado, enviar, enviando] = useActionState(acao, { erro: null, envio: 0 });
+  // Quantidade e valor digitados, para mostrar o total. Zera junto com o formulário a cada lançamento.
+  const [digitado, setDigitado] = useState<{ envio: number; campos: Record<string, string> }>({ envio: 0, campos: {} });
+  const digitados = digitado.envio === estado.envio ? digitado.campos : {};
+  const total = numero(digitados.quantidade ?? "") * numero(digitados.valor_unitario ?? "");
   return (
     <div className="space-y-4">
       {estado.mensagem && (
@@ -48,6 +69,12 @@ export function FormularioLancamento({
       <form
         key={estado.envio}
         action={enviar}
+        onChange={(e) => {
+          const campo = e.target as unknown as HTMLInputElement;
+          if (campo.name === "quantidade" || campo.name === "valor_unitario") {
+            setDigitado({ envio: estado.envio, campos: { ...digitados, [campo.name]: campo.value } });
+          }
+        }}
         className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
       >
         <input type="hidden" name="obra" value={obraId} />
@@ -80,6 +107,8 @@ export function FormularioLancamento({
               name={c.nome}
               required={c.obrigatorio}
               autoComplete="off"
+              inputMode={c.tipo === "valor" ? "decimal" : undefined}
+              placeholder={c.tipo === "valor" ? "Ex.: 32,90" : undefined}
               list={c.sugestoes?.length ? `${c.nome}-sugestoes` : undefined}
               defaultValue={typeof estado.valores?.[c.nome] === "string" ? (estado.valores[c.nome] as string) : undefined}
               className={CLASSE_CAMPO}
@@ -92,6 +121,11 @@ export function FormularioLancamento({
               </datalist>
             )}
             {c.ajuda && <span className="mt-1 block text-sm text-slate-500">{c.ajuda}</span>}
+            {c.tipo === "valor" && total > 0 && (
+              <span className="mt-2 block rounded-lg bg-destaque-50 px-3 py-2 text-sm font-semibold text-destaque-700">
+                Total desta entrada: {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+              </span>
+            )}
           </label>
         ))}
 

@@ -2,30 +2,33 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listarObras } from "@/lib/cadastros";
 import { banco } from "@/lib/db";
-import { formatarQuantidade } from "@/lib/estoque";
 import { podeVerRelatorios } from "@/lib/movimentos";
 import { exigirUsuario } from "@/lib/sessao";
 import { Icone } from "../icones";
-import { Cabecalho, Cartao, CLASSE_BOTAO, CLASSE_CAMPO, CLASSE_TABELA, CLASSE_TD, CLASSE_TH, Vazio } from "../ui";
+import { Cabecalho, Cartao, CLASSE_BOTAO, CLASSE_BOTAO_CLARO, CLASSE_CAMPO } from "../ui";
 import { montarRelatorio, type FiltroRelatorio } from "./dados";
+
+const DESCRICAO = {
+  saldo: "Quanto tem de cada material em cada obra, com o custo médio e o valor total em estoque.",
+  consumo: "Quanto de cada material saiu no período, por obra e por etapa/serviço, com o valor consumido.",
+};
 
 const ABAS = [
   { tipo: "saldo", rotulo: "Saldo por obra", icone: "estoque" as const },
   { tipo: "consumo", rotulo: "Consumo por período", icone: "saida" as const },
 ];
 
-// Relatórios para o escritório: saldo por obra e consumo por período, com download em Excel.
+// Relatórios para o escritório: saldo por obra e consumo por período, em PDF ou Excel.
 export default async function Relatorios({ searchParams }: { searchParams: Promise<FiltroRelatorio> }) {
   const usuario = await exigirUsuario();
   if (!podeVerRelatorios(usuario.perfil)) redirect("/");
   const filtro = await searchParams;
   const obras = listarObras(banco());
   const r = montarRelatorio(banco(), obras, filtro);
-  const parametros = new URLSearchParams({ tipo: r.tipo, obra: r.obra, ...(r.tipo === "consumo" ? { de: r.de, ate: r.ate } : {}) });
 
   return (
     <>
-      <Cabecalho titulo="Relatórios" subtitulo="Escolha o relatório e baixe em Excel quando precisar." />
+      <Cabecalho titulo="Relatórios" subtitulo="Escolha o relatório, a obra e o período." />
 
       <nav className="mb-4 flex gap-2 overflow-x-auto">
         {ABAS.map((a) => (
@@ -42,8 +45,10 @@ export default async function Relatorios({ searchParams }: { searchParams: Promi
         ))}
       </nav>
 
-      <Cartao className="mb-4 p-4">
-        <form className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+      <Cartao className="p-5">
+        <p className="mb-4 text-sm text-slate-600">{DESCRICAO[r.tipo]}</p>
+        {/* "Ver relatório" abre o PDF numa aba nova; "Baixar Excel" usa os mesmos filtros. */}
+        <form action="/relatorios/pdf" target="_blank" className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
           <input type="hidden" name="tipo" value={r.tipo} />
           <label className="block">
             <span className="text-sm font-medium">Obra</span>
@@ -69,57 +74,17 @@ export default async function Relatorios({ searchParams }: { searchParams: Promi
               </label>
             </>
           )}
-          <button className={`${CLASSE_BOTAO} sm:col-start-4`}>Ver relatório</button>
+          <div className="flex flex-col gap-2 sm:col-span-full sm:flex-row sm:justify-end">
+            <button formAction="/relatorios/excel" formTarget="_self" className={CLASSE_BOTAO_CLARO}>
+              <Icone nome="baixar" className="h-4 w-4" /> Baixar Excel
+            </button>
+            <button className={`${CLASSE_BOTAO} py-3 text-lg`}>
+              <Icone nome="relatorio" className="h-5 w-5 text-destaque-400" /> Ver relatório
+            </button>
+          </div>
         </form>
       </Cartao>
-
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-semibold">{r.titulo}</h2>
-        {r.linhas.length > 0 && (
-          <a href={`/relatorios/excel?${parametros}`} className={CLASSE_BOTAO} download>
-            <Icone nome="baixar" className="h-4 w-4" /> Baixar Excel
-          </a>
-        )}
-      </div>
-
-      <Cartao className="overflow-x-auto">
-        {r.linhas.length === 0 ? (
-          <Vazio>
-            {r.tipo === "saldo"
-              ? "Nenhum material com saldo nessa obra."
-              : "Nenhuma saída de material nesse período."}
-          </Vazio>
-        ) : (
-          <table className={CLASSE_TABELA}>
-            <thead>
-              <tr>
-                {r.colunas.map((c, i) => (
-                  <th key={c} className={`${CLASSE_TH} ${r.numericas.includes(i) ? "text-right" : ""}`}>
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {r.linhas.map((l, i) => (
-                <tr key={i} className="hover:bg-marca-50/40">
-                  {l.map((v, j) => (
-                    <td
-                      key={j}
-                      className={`${CLASSE_TD} ${r.numericas.includes(j) ? "text-right tabular-nums font-semibold" : ""}`}
-                    >
-                      {typeof v === "number" ? formatarQuantidade(v) : v || "—"}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Cartao>
-      {r.linhas.length > 0 && (
-        <p className="mt-3 text-sm text-slate-500">{r.linhas.length.toLocaleString("pt-BR")} linhas.</p>
-      )}
+      <p className="mt-3 text-sm text-slate-500">O relatório abre em PDF numa nova aba, pronto para imprimir ou enviar.</p>
     </>
   );
 }
