@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   ativarMaterial,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/cadastros";
 import { banco, PASTA_IMAGENS_OBRAS } from "@/lib/db";
 import { conferirImagem, guardarImagemObra, removerImagemObra, TIPOS_IMAGEM } from "@/lib/imagens-obra";
+import { podeLancar, registrarEntrada, registrarSaida } from "@/lib/movimentos";
 import { lerPlanilha } from "@/lib/planilha";
 import { COOKIE_OBRA, exigirAdmin, exigirUsuario, obraAtual } from "@/lib/sessao";
 
@@ -129,4 +131,42 @@ export async function ativarUsuarioAcao(id: number, ativo: boolean): Promise<Est
   const r = ativarUsuario(banco(), id, ativo);
   if (r) return { erro: r.erro };
   redirect("/usuarios");
+}
+
+// ---------- Entrada e saída ----------
+
+// "envio" muda a cada lançamento certo, para o formulário voltar limpo.
+export type EstadoLancamento = {
+  erro: string | null;
+  mensagem?: string;
+  envio: number;
+  valores?: Record<string, string | string[]>;
+};
+
+export async function lancarAcao(
+  tipo: "entrada" | "saida",
+  anterior: EstadoLancamento,
+  form: FormData,
+): Promise<EstadoLancamento> {
+  const usuario = await exigirUsuario();
+  if (!podeLancar(usuario.perfil)) return { ...anterior, erro: "Seu perfil só pode consultar o estoque." };
+  // A obra precisa ser uma das que a pessoa pode usar.
+  const { obras } = await obraAtual(usuario);
+  const obraId = Number(texto(form, "obra"));
+  if (!obras.some((o) => o.id === obraId)) return { ...anterior, erro: "Você não tem acesso a essa obra.", valores: valores(form) };
+
+  const comum = {
+    obraId,
+    materialId: Number(texto(form, "material")),
+    quantidade: texto(form, "quantidade"),
+    observacao: texto(form, "observacao"),
+    usuarioId: usuario.id,
+  };
+  const r =
+    tipo === "entrada"
+      ? registrarEntrada(banco(), { ...comum, fornecedor: texto(form, "fornecedor"), notaFiscal: texto(form, "nota_fiscal") })
+      : registrarSaida(banco(), { ...comum, retiradoPor: texto(form, "retirado_por"), etapa: texto(form, "etapa") });
+  if ("erro" in r) return { ...anterior, erro: r.erro, mensagem: undefined, valores: valores(form) };
+  revalidatePath(`/${tipo}`);
+  return { erro: null, mensagem: r.mensagem, envio: anterior.envio + 1 };
 }

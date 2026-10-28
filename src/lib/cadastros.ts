@@ -89,7 +89,7 @@ export function listarMateriais(
   return { materiais: achados.slice(0, LIMITE_LISTA_MATERIAIS), total: achados.length };
 }
 
-function semAcento(texto: string): string {
+export function semAcento(texto: string): string {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 

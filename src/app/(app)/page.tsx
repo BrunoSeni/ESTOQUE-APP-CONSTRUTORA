@@ -1,26 +1,42 @@
 import Link from "next/link";
+import type { Perfil } from "@/lib/auth";
 import { contarMateriais, listarObras, listarUsuarios } from "@/lib/cadastros";
 import { banco, PASTA_IMAGENS_OBRAS } from "@/lib/db";
 import { imagensDaObra } from "@/lib/imagens-obra";
+import { podeLancar, podeVerRelatorios } from "@/lib/movimentos";
 import { exigirUsuario, obraAtual } from "@/lib/sessao";
 import { Icone, type NomeIcone } from "./icones";
 import { Cabecalho, Cartao, CartaoNumero } from "./ui";
 
-// Atalhos das próximas etapas. Os botões são grandes para usar no celular, no canteiro.
-const ATALHOS: { titulo: string; texto: string; icone: NomeIcone }[] = [
-  { titulo: "Entrada", texto: "Material que chegou na obra", icone: "entrada" },
-  { titulo: "Saída", texto: "Material usado na obra", icone: "saida" },
-  { titulo: "Transferência", texto: "Mandar material para outra obra", icone: "transferencia" },
-  { titulo: "Saldo", texto: "Quanto tem de cada material", icone: "material" },
-  { titulo: "Histórico", texto: "Todas as movimentações", icone: "historico" },
-  { titulo: "Relatórios", texto: "Saldo, histórico e consumo em Excel", icone: "relatorio" },
-];
+// Atalhos das telas. Os botões são grandes para usar no celular, no canteiro.
+type Atalho = { titulo: string; texto: string; icone: NomeIcone; href?: string };
+
+function atalhos(perfil: Perfil): { prontos: (Atalho & { href: string })[]; emBreve: Atalho[] } {
+  const prontos: (Atalho & { href: string })[] = [
+    ...(podeLancar(perfil)
+      ? [
+          { titulo: "Entrada", texto: "Material que chegou na obra", icone: "entrada" as const, href: "/entrada" },
+          { titulo: "Saída", texto: "Material usado na obra", icone: "saida" as const, href: "/saida" },
+        ]
+      : []),
+    { titulo: "Saldo", texto: "Quanto tem de cada material", icone: "estoque", href: "/saldo" },
+    ...(podeVerRelatorios(perfil)
+      ? [{ titulo: "Relatórios", texto: "Saldo e consumo, com Excel", icone: "relatorio" as const, href: "/relatorios" }]
+      : []),
+  ];
+  const emBreve: Atalho[] = [
+    { titulo: "Transferência", texto: "Mandar material para outra obra", icone: "transferencia" },
+    { titulo: "Histórico", texto: "Todas as movimentações", icone: "historico" },
+  ];
+  return { prontos, emBreve };
+}
 
 export default async function Inicio() {
   const usuario = await exigirUsuario();
   const { atual } = await obraAtual(usuario);
   const db = banco();
   const admin = usuario.perfil === "admin";
+  const { prontos, emBreve } = atalhos(usuario.perfil);
   const imagens = atual ? imagensDaObra(PASTA_IMAGENS_OBRAS, atual.id) : null;
 
   const obrasAtivas = listarObras(db).filter((o) => !o.encerrada_em).length;
@@ -90,9 +106,28 @@ export default async function Inicio() {
         </Cartao>
       )}
 
+      <ul className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {prontos.map((a) => (
+          <li key={a.titulo}>
+            <Link
+              href={a.href}
+              className="group flex h-full flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-marca-300 hover:bg-marca-50"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-marca-600 text-destaque-400 group-hover:bg-marca-700">
+                <Icone nome={a.icone} className="h-6 w-6" />
+              </span>
+              <span>
+                <span className="block text-lg font-semibold">{a.titulo}</span>
+                <span className="block text-sm text-slate-500">{a.texto}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Em breve</h2>
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {ATALHOS.map((a) => (
+        {emBreve.map((a) => (
           <li key={a.titulo}>
             <Cartao className="flex gap-3 p-5 opacity-75">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
