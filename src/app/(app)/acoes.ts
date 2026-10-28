@@ -12,7 +12,8 @@ import {
   salvarUsuario,
   type ResultadoImportacao,
 } from "@/lib/cadastros";
-import { banco } from "@/lib/db";
+import { banco, PASTA_IMAGENS_OBRAS } from "@/lib/db";
+import { conferirImagem, guardarImagemObra, removerImagemObra, TIPOS_IMAGEM } from "@/lib/imagens-obra";
 import { lerPlanilha } from "@/lib/planilha";
 import { COOKIE_OBRA, exigirAdmin, exigirUsuario, obraAtual } from "@/lib/sessao";
 
@@ -27,6 +28,7 @@ function valores(form: FormData): Record<string, string | string[]> {
   const v: Record<string, string | string[]> = {};
   for (const chave of new Set(form.keys())) {
     if (chave.startsWith("$") || chave.includes("senha")) continue;
+    if (form.getAll(chave).some((x) => x instanceof File)) continue;
     const todos = form.getAll(chave).map(String);
     v[chave] = todos.length > 1 || chave === "obras" ? todos : todos[0];
   }
@@ -44,8 +46,25 @@ export async function trocarObraAcao(obraId: number) {
 
 export async function salvarObraAcao(id: number | null, _anterior: EstadoCadastro, form: FormData): Promise<EstadoCadastro> {
   await exigirAdmin();
+  // Confere as imagens antes de gravar qualquer coisa.
+  const imagens = [];
+  for (const tipo of TIPOS_IMAGEM) {
+    const arquivo = form.get(tipo);
+    if (!(arquivo instanceof File) || arquivo.size === 0) continue;
+    const dados = Buffer.from(await arquivo.arrayBuffer());
+    const conferida = conferirImagem(dados);
+    if ("erro" in conferida) {
+      return { erro: `${tipo === "logo" ? "Logo" : "Foto da fachada"}: ${conferida.erro}`, valores: valores(form) };
+    }
+    imagens.push({ tipo, dados });
+  }
+
   const r = salvarObra(banco(), id, { nome: texto(form, "nome"), endereco: texto(form, "endereco") });
   if ("erro" in r) return { erro: r.erro, valores: valores(form) };
+  for (const tipo of TIPOS_IMAGEM) {
+    if (form.get(`remover_${tipo}`)) removerImagemObra(PASTA_IMAGENS_OBRAS, r.id, tipo);
+  }
+  for (const i of imagens) guardarImagemObra(PASTA_IMAGENS_OBRAS, r.id, i.tipo, i.dados);
   redirect("/obras");
 }
 

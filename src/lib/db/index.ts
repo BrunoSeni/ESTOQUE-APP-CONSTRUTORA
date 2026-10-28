@@ -6,6 +6,9 @@ import { SCHEMA } from "./schema";
 // O banco é um arquivo no computador (pasta "dados", fora do GitHub).
 const ARQUIVO = process.env.ESTOQUE_DB ?? path.join(process.cwd(), "dados", "estoque.db");
 
+// Logo e foto da fachada das obras ficam junto do banco, na pasta "dados/obras".
+export const PASTA_IMAGENS_OBRAS = path.join(path.dirname(ARQUIVO), "obras");
+
 export function abrirBanco(arquivo: string): DatabaseSync {
   if (arquivo !== ":memory:") mkdirSync(path.dirname(arquivo), { recursive: true });
   const db = new DatabaseSync(arquivo);

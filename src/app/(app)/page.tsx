@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { contarMateriais, listarObras, listarUsuarios } from "@/lib/cadastros";
-import { banco } from "@/lib/db";
+import { banco, PASTA_IMAGENS_OBRAS } from "@/lib/db";
+import { imagensDaObra } from "@/lib/imagens-obra";
 import { exigirUsuario, obraAtual } from "@/lib/sessao";
 import { Icone, type NomeIcone } from "./icones";
 import { Cabecalho, Cartao, CartaoNumero } from "./ui";
@@ -20,6 +21,7 @@ export default async function Inicio() {
   const { atual } = await obraAtual(usuario);
   const db = banco();
   const admin = usuario.perfil === "admin";
+  const imagens = atual ? imagensDaObra(PASTA_IMAGENS_OBRAS, atual.id) : null;
 
   const obrasAtivas = listarObras(db).filter((o) => !o.encerrada_em).length;
   const materiais = contarMateriais(db);
@@ -34,6 +36,27 @@ export default async function Inicio() {
   return (
     <>
       <Cabecalho titulo={`Olá, ${usuario.nome.split(" ")[0]}`} subtitulo={atual ? `Obra atual: ${atual.nome}` : "Nenhuma obra escolhida."} />
+
+      {atual && imagens && (imagens.fachada || imagens.logo) && (
+        <section className="relative mb-6 h-44 overflow-hidden rounded-xl bg-marca-800 shadow-sm sm:h-56">
+          {imagens.fachada && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imagens.fachada} alt={`Fachada da obra ${atual.nome}`} className="absolute inset-0 h-full w-full object-cover object-[50%_35%]" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 flex items-end gap-4 p-4 sm:p-5">
+            {imagens.logo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imagens.logo} alt={`Logo da obra ${atual.nome}`} className="h-16 w-16 shrink-0 rounded-lg object-cover shadow-lg ring-2 ring-white/80 sm:h-20 sm:w-20" />
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-destaque-400">Obra atual</p>
+              <p className="truncate text-xl font-bold text-white sm:text-2xl">{atual.nome}</p>
+              {atual.endereco && <p className="truncate text-sm text-slate-200">{atual.endereco}</p>}
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className={`mb-6 grid gap-3 ${admin ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
         <CartaoNumero icone="obra" rotulo="Obras em andamento" valor={String(obrasAtivas)} texto="com estoque próprio" />

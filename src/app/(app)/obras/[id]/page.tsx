@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { buscarObra } from "@/lib/cadastros";
-import { banco } from "@/lib/db";
+import { banco, PASTA_IMAGENS_OBRAS } from "@/lib/db";
+import { imagensDaObra } from "@/lib/imagens-obra";
 import { exigirAdmin } from "@/lib/sessao";
 import { encerrarObraAcao, salvarObraAcao } from "../../acoes";
 import { BotaoAcao, FormularioCadastro } from "../../formulario-cadastro";
 import { Cabecalho, Cartao } from "../../ui";
-import { CAMPOS_OBRA } from "../campos";
+import { camposObra } from "../campos";
 
 export default async function EditarObra({ params }: { params: Promise<{ id: string }> }) {
   await exigirAdmin();
@@ -18,7 +19,7 @@ export default async function EditarObra({ params }: { params: Promise<{ id: str
       <Cabecalho titulo={obra.nome} subtitulo="Editar obra" />
       <FormularioCadastro
         acao={salvarObraAcao.bind(null, obra.id)}
-        campos={CAMPOS_OBRA}
+        campos={camposObra(imagensDaObra(PASTA_IMAGENS_OBRAS, obra.id))}
         inicial={{ nome: obra.nome, endereco: obra.endereco ?? "" }}
         botao="Salvar"
         voltar="/obras"
