@@ -43,3 +43,4 @@ next-env.d.ts
 
 # banco de dados local (dados reais da empresa nunca vão para o GitHub)
 /dados/
+/backups/
