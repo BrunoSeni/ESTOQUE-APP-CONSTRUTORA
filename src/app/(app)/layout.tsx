@@ -1,4 +1,5 @@
 import { nomePerfil } from "@/lib/cadastros";
+import { podeLancar, podeVerRelatorios } from "@/lib/movimentos";
 import { exigirUsuario, obraAtual } from "@/lib/sessao";
 import { sairAcao } from "../acoes";
 import { MenuLateral } from "./menu-lateral";
@@ -11,6 +12,14 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
 
   const itens = [
     { href: "/", rotulo: "Início", icone: "inicio" as const },
+    ...(podeLancar(usuario.perfil)
+      ? [
+          { href: "/entrada", rotulo: "Entrada", icone: "entrada" as const },
+          { href: "/saida", rotulo: "Saída", icone: "saida" as const },
+        ]
+      : []),
+    { href: "/saldo", rotulo: "Saldo", icone: "estoque" as const },
+    ...(podeVerRelatorios(usuario.perfil) ? [{ href: "/relatorios", rotulo: "Relatórios", icone: "relatorio" as const }] : []),
     { href: "/materiais", rotulo: "Materiais", icone: "material" as const },
     ...(admin
       ? [
