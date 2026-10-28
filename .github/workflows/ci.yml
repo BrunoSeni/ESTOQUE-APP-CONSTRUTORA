@@ -1,6 +1,6 @@
 # Verificação automática: roda em todo PR e em toda atualização da main.
-# Enquanto o app ainda não tem código, só confere a estrutura do repositório.
-# Quando a tecnologia do app for escolhida, os passos de teste e build entram aqui.
+# Confere o código (lint), roda os testes e monta o app (build).
+# Se algum passo falhar, o PR fica vermelho e não pode entrar na main.
 name: CI
 
 on:
@@ -15,17 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Conferir arquivos básicos
-        run: test -f README.md
-
       - uses: actions/setup-node@v4
-        if: hashFiles('package.json') != ''
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
 
-      - name: Instalar, testar e montar o app
-        if: hashFiles('package.json') != ''
-        run: |
-          npm ci
-          npm test --if-present
-          npm run build --if-present
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Conferir o código
+        run: npm run lint
+
+      - name: Rodar os testes
+        run: npm test
+
+      - name: Montar o app
+        run: npm run build

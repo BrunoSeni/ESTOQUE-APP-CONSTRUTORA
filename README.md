@@ -3,6 +3,19 @@
 Aplicativo de uso interno da equipe da construtora para controlar o estoque de material da obra.
 
 O que o app precisa fazer está em [docs/requisitos.md](docs/requisitos.md).
+A tecnologia escolhida e como abrir o app estão em [docs/tecnologia.md](docs/tecnologia.md).
+
+## Rodar no computador
+
+Passo a passo em [docs/tecnologia.md](docs/tecnologia.md#como-abrir-o-app-no-seu-computador). Resumo: instale o Node.js e dê dois cliques em `iniciar.bat`.
+
+Para quem programa:
+
+```bash
+npm install
+npm run dev    # abre em http://localhost:3000
+npm test       # roda os testes
+```
 
 ## Como as mudanças entram no app
 
