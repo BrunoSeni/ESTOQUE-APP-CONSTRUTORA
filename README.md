@@ -2,6 +2,8 @@
 
 Aplicativo de uso interno da equipe da construtora para controlar o estoque de material da obra.
 
+O que o app precisa fazer está em [docs/requisitos.md](docs/requisitos.md).
+
 ## Como as mudanças entram no app
 
 A branch `main` guarda sempre a versão que está funcionando. Ninguém altera a `main` diretamente: toda mudança segue este caminho.
