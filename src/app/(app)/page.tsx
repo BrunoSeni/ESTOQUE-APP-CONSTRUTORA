@@ -49,7 +49,7 @@ export default async function Inicio() {
               <li key={p.href} className="flex items-center gap-3">
                 <span
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    p.feito ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                    p.feito ? "bg-green-100 text-green-700" : "bg-destaque-100 text-destaque-700"
                   }`}
                 >
                   {p.feito ? "✓" : i + 1}
@@ -57,7 +57,7 @@ export default async function Inicio() {
                 {p.feito ? (
                   <span className="text-slate-400 line-through">{p.texto}</span>
                 ) : (
-                  <Link href={p.href} className="font-medium text-orange-700 hover:underline">
+                  <Link href={p.href} className="font-medium text-marca-700 hover:underline">
                     {p.texto}
                   </Link>
                 )}

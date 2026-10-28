@@ -30,9 +30,9 @@ export default async function Obras() {
             </thead>
             <tbody>
               {obras.map((o) => (
-                <tr key={o.id} className="hover:bg-orange-50/40">
+                <tr key={o.id} className="hover:bg-marca-50/40">
                   <td className={CLASSE_TD}>
-                    <Link href={`/obras/${o.id}`} className="font-medium text-slate-900 hover:text-orange-700 hover:underline">
+                    <Link href={`/obras/${o.id}`} className="font-medium text-slate-900 hover:text-marca-700 hover:underline">
                       {o.nome}
                     </Link>
                   </td>

@@ -56,8 +56,8 @@ export function Importador() {
           <p>A planilha precisa ter uma coluna com o <b>nome do material</b> (ex.: “Descrição”, “Nome” ou “Insumo”) e outra com a <b>unidade</b> (ex.: “Unidade” ou “Und”). Outras colunas são ignoradas.</p>
           <p className="mt-2">Aceita Excel (.xlsx) e .csv. Materiais que já existem não são duplicados.</p>
         </div>
-        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 p-6 text-center hover:border-orange-400 hover:bg-orange-50/50">
-          <Icone nome="importar" className="h-8 w-8 text-orange-600" />
+        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 p-6 text-center hover:border-marca-400 hover:bg-marca-50/50">
+          <Icone nome="importar" className="h-8 w-8 text-marca-600" />
           <span className="font-medium">Escolher planilha</span>
           <input
             type="file"
@@ -65,7 +65,7 @@ export function Importador() {
             required
             accept=".xlsx,.xlsm,.csv,.xls"
             onChange={() => setEstado({ etapa: "inicio" })}
-            className="max-w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-orange-700"
+            className="max-w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-marca-50 file:px-3 file:py-2 file:text-marca-700"
           />
         </label>
         {estado.etapa === "inicio" && estado.erro && (
@@ -145,8 +145,8 @@ function Previa({
 
 function Numero({ valor, texto, destaque }: { valor: number; texto: string; destaque?: boolean }) {
   return (
-    <li className={`rounded-lg border p-3 ${destaque ? "border-orange-200 bg-orange-50" : "border-slate-200"}`}>
-      <p className={`text-2xl font-bold ${destaque ? "text-orange-700" : ""}`}>{valor.toLocaleString("pt-BR")}</p>
+    <li className={`rounded-lg border p-3 ${destaque ? "border-marca-200 bg-marca-50" : "border-slate-200"}`}>
+      <p className={`text-2xl font-bold ${destaque ? "text-marca-700" : ""}`}>{valor.toLocaleString("pt-BR")}</p>
       <p className="text-sm text-slate-600">{texto}</p>
     </li>
   );

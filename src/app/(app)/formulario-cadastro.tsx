@@ -50,7 +50,7 @@ export function FormularioCadastro({
                   {c.opcoes.map((o) => (
                     <label
                       key={o.valor}
-                      className="flex cursor-pointer gap-3 rounded-lg border border-slate-200 p-3 hover:border-orange-300 has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50"
+                      className="flex cursor-pointer gap-3 rounded-lg border border-slate-200 p-3 hover:border-marca-300 has-[:checked]:border-marca-500 has-[:checked]:bg-marca-50"
                     >
                       <input
                         type={c.tipo === "escolha" ? "radio" : "checkbox"}
@@ -58,7 +58,7 @@ export function FormularioCadastro({
                         value={o.valor}
                         defaultChecked={marcados.includes(o.valor)}
                         required={c.tipo === "escolha" && c.obrigatorio}
-                        className="mt-1 accent-orange-600"
+                        className="mt-1 accent-marca-600"
                       />
                       <span>
                         <span className="block text-sm font-medium">{o.rotulo}</span>

@@ -1,5 +1,29 @@
 @import "tailwindcss";
 
+/* Cores da CR Incorp, tiradas do logo:
+   "marca" é o cinza-azulado do C e do nome; "destaque" é o amarelo do R. */
+@theme {
+  --color-marca-50: #f3f5f7;
+  --color-marca-100: #e4e8ec;
+  --color-marca-200: #c9d1d8;
+  --color-marca-300: #a3afba;
+  --color-marca-400: #7a8995;
+  --color-marca-500: #5f6e7a;
+  --color-marca-600: #4e5d69;
+  --color-marca-700: #3f4b55;
+  --color-marca-800: #333d45;
+  --color-marca-900: #262d33;
+
+  --color-destaque-50: #fff8e6;
+  --color-destaque-100: #feedc0;
+  --color-destaque-200: #fde08a;
+  --color-destaque-300: #fccf55;
+  --color-destaque-400: #fbc136;
+  --color-destaque-500: #fab51f;
+  --color-destaque-600: #e09a0a;
+  --color-destaque-700: #b97a08;
+}
+
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }

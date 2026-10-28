@@ -24,11 +24,11 @@ export function Cabecalho({
 }
 
 export const CLASSE_BOTAO =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2.5 font-semibold text-white shadow-sm hover:bg-orange-700 disabled:opacity-60";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-marca-600 px-4 py-2.5 font-semibold text-white shadow-sm hover:bg-marca-700 disabled:opacity-60";
 export const CLASSE_BOTAO_CLARO =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60";
 export const CLASSE_CAMPO =
-  "mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200";
+  "mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 outline-none focus:border-destaque-500 focus:ring-2 focus:ring-destaque-200";
 
 export function BotaoLink({
   href,
@@ -57,7 +57,7 @@ export function Cartao({ children, className = "" }: { children: React.ReactNode
 export function CartaoNumero({ icone, rotulo, valor, texto }: { icone: NomeIcone; rotulo: string; valor: string; texto: string }) {
   return (
     <Cartao className="flex gap-3 p-4">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destaque-50 text-destaque-600">
         <Icone nome={icone} className="h-5 w-5" />
       </span>
       <div>
@@ -69,11 +69,11 @@ export function CartaoNumero({ icone, rotulo, valor, texto }: { icone: NomeIcone
   );
 }
 
-export function Etiqueta({ cor, children }: { cor: "verde" | "cinza" | "laranja"; children: React.ReactNode }) {
+export function Etiqueta({ cor, children }: { cor: "verde" | "cinza" | "amarelo"; children: React.ReactNode }) {
   const cores = {
     verde: "bg-green-50 text-green-700 ring-green-200",
     cinza: "bg-slate-100 text-slate-600 ring-slate-200",
-    laranja: "bg-orange-50 text-orange-700 ring-orange-200",
+    amarelo: "bg-destaque-50 text-destaque-700 ring-destaque-200",
   };
   return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${cores[cor]}`}>{children}</span>;
 }
