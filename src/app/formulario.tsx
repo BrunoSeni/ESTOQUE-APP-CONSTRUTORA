@@ -33,7 +33,7 @@ export function Formulario({
             required
             autoComplete={c.autoComplete}
             defaultValue={estado.valores?.[c.nome]}
-            className="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg"
+            className="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
           />
         </label>
       ))}
@@ -41,7 +41,7 @@ export function Formulario({
       <button
         type="submit"
         disabled={enviando}
-        className="w-full rounded-lg bg-blue-700 p-3 text-lg font-semibold text-white disabled:opacity-60"
+        className="w-full rounded-lg bg-orange-600 hover:bg-orange-700 p-3 text-lg font-semibold text-white disabled:opacity-60"
       >
         {enviando ? "Aguarde..." : botao}
       </button>
