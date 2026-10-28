@@ -21,7 +21,7 @@ function atalhos(perfil: Perfil): { prontos: (Atalho & { href: string })[]; emBr
       : []),
     { titulo: "Saldo", texto: "Quanto tem de cada material", icone: "estoque", href: "/saldo" },
     ...(podeVerRelatorios(perfil)
-      ? [{ titulo: "Relatórios", texto: "Saldo e consumo, com Excel", icone: "relatorio" as const, href: "/relatorios" }]
+      ? [{ titulo: "Relatórios", texto: "Saldo e consumo, em PDF e Excel", icone: "relatorio" as const, href: "/relatorios" }]
       : []),
   ];
   const emBreve: Atalho[] = [
