@@ -36,12 +36,18 @@ Para abrir:
 
 **Para testar no celular:** com o celular no **mesmo Wi-Fi** do computador, abra no navegador do celular `http://IP-DO-COMPUTADOR:3000`. Para achar o IP no Windows, abra o "Prompt de Comando", digite `ipconfig` e use o número em "Endereço IPv4" (algo como `192.168.0.15`). Se o Windows perguntar sobre o firewall, clique em **Permitir**.
 
-**Para atualizar** depois que um PR entrar na `main`: baixe o ZIP de novo e copie a pasta `dados` da versão antiga para a nova (é nela que ficam os cadastros e lançamentos).
+**Para atualizar** depois que um PR entrar na `main`:
+
+1. Feche a janela preta do app, se estiver aberta.
+2. Na pasta do app, dê dois cliques em **`atualizar.bat`**.
+3. Ele baixa a versão nova, guarda uma cópia da pasta `dados` em `backups`, troca o código na mesma pasta e abre o app. Os cadastros e lançamentos continuam lá.
+
+Se o Windows mostrar um aviso azul ("O Windows protegeu o computador"), clique em **Mais informações** e depois em **Executar assim mesmo**.
 
 ## Cuidados
 
 - A pasta `dados` guarda os dados reais e **nunca vai para o GitHub** (o repositório é público).
-- Faça uma cópia da pasta `dados` de vez em quando, como backup.
+- Faça uma cópia da pasta `dados` de vez em quando, como backup. O `atualizar.bat` já faz uma cópia em `backups` a cada atualização.
 
 ## Como fica organizado (para quem programa)
 
