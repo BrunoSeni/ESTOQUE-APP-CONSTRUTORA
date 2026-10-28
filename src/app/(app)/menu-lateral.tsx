@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
 import { trocarObraAcao } from "./acoes";
+import { SimboloCR } from "../logo";
 import { Icone, type NomeIcone } from "./icones";
 
 type Item = { href: string; rotulo: string; icone: NomeIcone };
@@ -34,12 +35,10 @@ export function MenuLateral({
   const conteudo = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-white">
-          <Icone nome="material" className="h-6 w-6" />
-        </span>
+        <SimboloCR className="h-11 w-auto" />
         <div>
-          <p className="font-bold leading-tight text-orange-600">Estoque da Obra</p>
-          <p className="text-xs text-slate-500">Controle de material</p>
+          <p className="font-bold leading-tight text-marca-700">Estoque da Obra</p>
+          <p className="text-xs font-medium tracking-wide text-slate-500">CR INCORP</p>
         </div>
       </div>
 
@@ -56,7 +55,7 @@ export function MenuLateral({
               const id = Number(e.target.value);
               iniciar(() => trocarObraAcao(id));
             }}
-            className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+            className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-destaque-500 focus:ring-2 focus:ring-destaque-200"
           >
             {obras.map((o) => (
               <option key={o.id} value={o.id}>
@@ -68,7 +67,7 @@ export function MenuLateral({
           <p className="mt-1.5 text-sm text-slate-500">
             Nenhuma obra.{" "}
             {podeCadastrarObra && (
-              <Link href="/obras/nova" className="font-medium text-orange-600 underline" onClick={() => setAberto(false)}>
+              <Link href="/obras/nova" className="font-medium text-marca-600 underline" onClick={() => setAberto(false)}>
                 Cadastrar
               </Link>
             )}
@@ -83,10 +82,10 @@ export function MenuLateral({
             href={i.href}
             onClick={() => setAberto(false)}
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
-              ativo(i.href) ? "bg-orange-600 text-white shadow-sm" : "text-slate-700 hover:bg-orange-50 hover:text-orange-700"
+              ativo(i.href) ? "bg-marca-600 text-white shadow-sm" : "text-slate-700 hover:bg-marca-50 hover:text-marca-700"
             }`}
           >
-            <Icone nome={i.icone} />
+            <Icone nome={i.icone} className={`h-5 w-5 ${ativo(i.href) ? "text-destaque-400" : ""}`} />
             {i.rotulo}
           </Link>
         ))}
@@ -111,7 +110,8 @@ export function MenuLateral({
         <button onClick={() => setAberto(true)} aria-label="Abrir menu" className="rounded-lg p-1.5 hover:bg-slate-100">
           <Icone nome="menu" className="h-6 w-6" />
         </button>
-        <span className="font-bold text-orange-600">Estoque da Obra</span>
+        <SimboloCR className="h-7 w-auto" />
+        <span className="font-bold text-marca-700">Estoque da Obra</span>
         <span className="ml-auto truncate text-sm text-slate-500">{obras.find((o) => o.id === obraAtualId)?.nome}</span>
       </div>
 

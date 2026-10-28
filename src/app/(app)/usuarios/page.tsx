@@ -30,9 +30,9 @@ export default async function Usuarios() {
           </thead>
           <tbody>
             {usuarios.map((u) => (
-              <tr key={u.id} className="hover:bg-orange-50/40">
+              <tr key={u.id} className="hover:bg-marca-50/40">
                 <td className={CLASSE_TD}>
-                  <Link href={`/usuarios/${u.id}`} className="font-medium hover:text-orange-700 hover:underline">
+                  <Link href={`/usuarios/${u.id}`} className="font-medium hover:text-marca-700 hover:underline">
                     {u.nome}
                   </Link>
                   <p className="text-xs text-slate-500">{u.email}</p>

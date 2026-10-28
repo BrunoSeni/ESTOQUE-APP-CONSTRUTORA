@@ -34,12 +34,12 @@ export default async function Materiais({ searchParams }: { searchParams: Promis
             name="busca"
             defaultValue={busca}
             placeholder="Buscar material pelo nome..."
-            className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+            className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 outline-none focus:border-destaque-500 focus:ring-2 focus:ring-destaque-200"
           />
         </div>
         {admin && (
           <label className="flex items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" name="inativos" value="1" defaultChecked={inativos === "1"} className="accent-orange-600" />
+            <input type="checkbox" name="inativos" value="1" defaultChecked={inativos === "1"} className="accent-marca-600" />
             Mostrar desativados
           </label>
         )}
@@ -66,10 +66,10 @@ export default async function Materiais({ searchParams }: { searchParams: Promis
             </thead>
             <tbody>
               {materiais.map((m) => (
-                <tr key={m.id} className="hover:bg-orange-50/40">
+                <tr key={m.id} className="hover:bg-marca-50/40">
                   <td className={CLASSE_TD}>
                     {admin ? (
-                      <Link href={`/materiais/${m.id}`} className="font-medium hover:text-orange-700 hover:underline">
+                      <Link href={`/materiais/${m.id}`} className="font-medium hover:text-marca-700 hover:underline">
                         {m.nome}
                       </Link>
                     ) : (
